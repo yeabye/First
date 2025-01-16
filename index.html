@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Wallet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: #f3f4f6;
+            color: #333;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body.dark {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .header .title {
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header .title img {
+            width: 70px;
+            height: 50px;
+            border-radius: 30%;
+        }
+
+        .dark-mode {
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 30px;
+            color: #333;
+            transition: color 0.3s;
+        }
+
+        body.dark .dark-mode {
+            color: #e0e0e0;
+        }
+
+        .crypto-banner {
+            background: #6a11cb;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #fff;
+        }
+
+        .crypto-banner h2 {
+            font-size: 24px;
+            margin: 0;
+        }
+
+        .crypto-banner p {
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .filter-container {
+            margin-bottom: 20px;
+        }
+
+        .filter-container select {
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            width: 100%;
+        }
+
+        .wallets {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .wallet {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .wallet .info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .wallet .info img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+        }
+
+        .wallet .details .name {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .wallet .details .coin {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .wallet .amount .usd {
+            font-size: 16px;
+            color: #00aaff;
+        }
+
+        .wallet .change {
+            font-size: 14px;
+        }
+
+        .change.up {
+            color: green;
+        }
+
+        .change.down {
+            color: red;
+        }
+
+        .graph-container {
+            margin-top: 20px;
+        }
+
+        canvas {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                padding: 30px;
+            }
+
+            .wallets {
+                flex-wrap: wrap;
+                flex-direction: row;
+                justify-content: space-between;
+            }
+
+            .wallet {
+                width: 48%;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .wallet {
+                width: 30%;
+            }
+        }
+    </style>
+</head>
+<body class="light">
+    <div class="container">
+        <div class="header">
+            <div class="title">
+                <img src="https://logowik.com/content/uploads/images/trust-wallet4005.jpg" alt="Trust Wallet Logo">
+                Trust Wallet
+            </div>
+            <!-- Toggle Button -->
+            <button class="dark-mode" id="darkModeToggle">🌞</button>
+        </div>
+
+        <div class="crypto-banner">
+            <h2>Manage Your Crypto Easily</h2>
+            <p>Track, trade, and grow your investments effortlessly.</p>
+        </div>
+
+        <div class="filter-container">
+            <select id="sortWallets" onchange="sortWallets()">
+                <option value="name">Sort by Name</option>
+                <option value="price">Sort by Price</option>
+            </select>
+        </div>
+
+        <div class="wallets" id="wallets">
+            <!-- Wallets will be dynamically loaded here -->
+        </div>
+
+        <div class="graph-container">
+            <canvas id="cryptoChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Toggle dark mode
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            if (document.body.classList.contains('dark')) {
+                darkModeToggle.textContent = '🌙'; // Change to moon
+            } else {
+                darkModeToggle.textContent = '🌞'; // Change to sun
+            }
+        });
+
+        // Example data for wallets
+        const walletsData = [
+            { name: 'Bitcoin', coin: 'BTC', usd: 50000, crypto: 0.5, change: '+5%', img: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' },
+            { name: 'Ethereum', coin: 'ETH', usd: 3500, crypto: 1.2, change: '+3%', img: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
+            { name: 'Tether', coin: 'USDT', usd: 1, crypto: 1000, change: '+0%', img: 'https://cryptologos.cc/logos/tether-usdt-logo.png' },
+            { name: 'Litecoin', coin: 'LTC', usd: 200, crypto: 10, change: '-2%', img: 'https://cryptologos.cc/logos/litecoin-ltc-logo.png' },
+            { name: 'Ripple', coin: 'XRP', usd: 1.2, crypto: 1000, change: '+2%', img: 'https://cryptologos.cc/logos/ripple-xrp-logo.png' },
+            { name: 'Bitcoin Cash', coin: 'BCH', usd: 600, crypto: 0.8, change: '-1%', img: 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png' },
+            { name: 'Cardano', coin: 'ADA', usd: 2.5, crypto: 50, change: '+6%', img: 'https://cryptologos.cc/logos/cardano-ada-logo.png' },
+            { name: 'Polkadot', coin: 'DOT', usd: 15, crypto: 10, change: '+8%', img: 'https://cryptologos.cc/logos/polkadot-dot-logo.png' },
+            { name: 'Dogecoin', coin: 'DOGE', usd: 0.35, crypto: 2000, change: '+3%', img: 'https://cryptologos.cc/logos/dogecoin-doge-logo.png' },
+            { name: 'Chainlink', coin: 'LINK', usd: 30, crypto: 5, change: '+10%', img: 'https://cryptologos.cc/logos/chainlink-link-logo.png' },
+            { name: 'Solana', coin: 'SOL', usd: 100, crypto: 2, change: '-3%', img: 'https://cryptologos.cc/logos/solana-sol-logo.png' },
+            { name: 'Avalanche', coin: 'AVAX', usd: 70, crypto: 4, change: '+5%', img: 'https://cryptologos.cc/logos/avalanche-avax-logo.png' },
+            { name: 'Shiba Inu', coin: 'SHIB', usd: 0.00001, crypto: 10000000, change: '+7%', img: 'https://cryptologos.cc/logos/shiba-inu-shib-logo.png' },
+            { name: 'Litecoin', coin: 'LTC', usd: 200, crypto: 5, change: '-2%', img: 'https://cryptologos.cc/logos/litecoin-ltc-logo.png' },
+            { name: 'Stellar', coin: 'XLM', usd: 0.35, crypto: 500, change: '+3%', img: 'https://cryptologos.cc/logos/stellar-xlm-logo.png' },
+            { name: 'Uniswap', coin: 'UNI', usd: 25, crypto: 2, change: '+4%', img: 'https://cryptologos.cc/logos/uniswap-uni-logo.png' },
+            { name: 'Tezos', coin: 'XTZ', usd: 7.5, crypto: 10, change: '+2%', img: 'https://cryptologos.cc/logos/tezos-xtz-logo.png' },
+            { name: 'Cosmos', coin: 'ATOM', usd: 30, crypto: 7, change: '-1%', img: 'https://cryptologos.cc/logos/cosmos-atom-logo.png' },
+            { name: 'Polygon', coin: 'MATIC', usd: 2.5, crypto: 50, change: '+6%', img: 'https://cryptologos.cc/logos/polygon-matic-logo.png' },
+            { name: 'VeChain', coin: 'VET', usd: 0.15, crypto: 1000, change: '-5%', img: 'https://cryptologos.cc/logos/vechain-vet-logo.png' },
+            { name: 'Terra', coin: 'LUNA', usd: 85, crypto: 3, change: '+2%', img: 'https://cryptologos.cc/logos/terra-luna-logo.png' },
+            { name: 'Fantom', coin: 'FTM', usd: 3, crypto: 100, change: '+7%', img: 'https://cryptologos.cc/logos/fantom-ftm-logo.png' },
+            { name: 'Elrond', coin: 'EGLD', usd: 200, crypto: 5, change: '-1%', img: 'https://cryptologos.cc/logos/elrond-egld-logo.png' },
+            { name: 'Harmony', coin: 'ONE', usd: 0.2, crypto: 1000, change: '+4%', img: 'https://cryptologos.cc/logos/harmony-one-logo.png' },
+            { name: 'Aave', coin: 'AAVE', usd: 350, crypto: 3, change: '+10%', img: 'https://cryptologos.cc/logos/aave-aave-logo.png' },
+            { name: 'SushiSwap', coin: 'SUSHI', usd: 11, crypto: 20, change: '+3%', img: 'https://cryptologos.cc/logos/sushiswap-sushi-logo.png' },
+            { name: 'PancakeSwap', coin: 'CAKE', usd: 15, crypto: 8, change: '-2%', img: 'https://cryptologos.cc/logos/pancakeswap-cake-logo.png' },
+            { name: 'Zilliqa', coin: 'ZIL', usd: 0.1, crypto: 500, change: '+5%', img: 'https://cryptologos.cc/logos/zilliqa-zil-logo.png' },
+            { name: 'Basic Attention Token', coin: 'BAT', usd: 1.5, crypto: 300, change: '+6%', img: 'https://cryptologos.cc/logos/basic-attention-token-bat-logo.png' }
+        ];
+
+        // Display wallets
+        function displayWallets() {
+            const walletsContainer = document.getElementById('wallets');
+            walletsData.forEach(wallet => {
+                const walletElement = document.createElement('div');
+                walletElement.classList.add('wallet');
+                const changeClass = wallet.change.includes('+') ? 'up' : 'down';
+                walletElement.innerHTML = `
+
+                    <div class="info">
+                        <img src="${wallet.img}" alt="${wallet.name} Logo">
+                        <div class="details">
+                            <div class="name">${wallet.name}</div>
+                            <div class="coin">${wallet.coin}</div>
+                        </div>
+                    </div>
+                    <div class="amount">
+                        <div class="usd">$${wallet.usd}</div>
+                        <div class="crypto">${wallet.crypto} ${wallet.coin}</div>
+                    </div>
+                    <div class="change ${changeClass}">${wallet.change}</div>
+                `;
+               walletElement.onclick = () => window.location.href = `details.html?coin=${wallet.coin}`;
+
+                walletsContainer.appendChild(walletElement);
+            });
+        }
+
+        // Display chart
+        function displayChart() {
+            const ctx = document.getElementById('cryptoChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Bitcoin Price',
+                        data: [50000, 55000, 60000, 65000, 70000, 75000],
+                        borderColor: '#ff6347',
+                        fill: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: 'Month' } },
+                        y: { title: { display: true, text: 'Price (USD)' } }
+                    }
+                }
+            });
+        }
+
+        // Sort wallets by name or price
+        function sortWallets() {
+            const sortValue = document.getElementById('sortWallets').value;
+            const sortedData = [...walletsData];
+            if (sortValue === 'name') {
+                sortedData.sort((a, b) => a.name.localeCompare(b.name));
+            } else if (sortValue === 'price') {
+                sortedData.sort((a, b) => b.usd - a.usd);
+            }
+            walletsData.length = 0;
+            walletsData.push(...sortedData);
+            document.getElementById('wallets').innerHTML = '';
+            displayWallets();
+        }
+
+        // Initialize everything
+        displayWallets();
+        displayChart();
+    </script>
+
+</body>
+</html>
